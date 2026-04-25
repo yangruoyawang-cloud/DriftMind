@@ -10,8 +10,45 @@ async function startServer() {
   const app = express();
   // Use the platform-provided PORT in production deployments.
   const PORT = Number(process.env.PORT || 3000);
+  const API_RATE_LIMIT_WINDOW_MS = Number(process.env.API_RATE_LIMIT_WINDOW_MS || 60_000);
+  const API_RATE_LIMIT_MAX = Number(process.env.API_RATE_LIMIT_MAX || 30);
 
+  // Required on Render/Proxy so req.ip reflects the caller IP.
+  app.set("trust proxy", 1);
   app.use(express.json());
+
+  const ipHitMap = new Map<string, { count: number; resetAt: number }>();
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, data] of ipHitMap.entries()) {
+      if (now >= data.resetAt) ipHitMap.delete(ip);
+    }
+  }, Math.max(30_000, API_RATE_LIMIT_WINDOW_MS)).unref();
+
+  function apiRateLimit(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (req.path === "/api/health") return next();
+
+    const now = Date.now();
+    const ip = req.ip || "unknown";
+    const current = ipHitMap.get(ip);
+
+    if (!current || now >= current.resetAt) {
+      ipHitMap.set(ip, { count: 1, resetAt: now + API_RATE_LIMIT_WINDOW_MS });
+      return next();
+    }
+
+    if (current.count >= API_RATE_LIMIT_MAX) {
+      return res.status(429).json({
+        error: "Too many requests. Please try again later.",
+        retryAfterMs: current.resetAt - now,
+      });
+    }
+
+    current.count += 1;
+    return next();
+  }
+
+  app.use("/api", apiRateLimit);
 
   // 基础健康检查
   app.get("/health", (req, res) => res.send("OK"));

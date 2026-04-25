@@ -9,3 +9,7 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
+      - key: API_RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: API_RATE_LIMIT_MAX
+        value: "30"

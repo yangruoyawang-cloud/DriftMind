@@ -29,3 +29,7 @@ View your app in AI Studio: https://ai.studio/apps/e5db03f8-d6c6-486a-a641-e34d5
 5. Deploy and verify:
    - `https://<your-render-domain>/api/health`
    - Check `diagnostics.HAS_KEY` is `true`.
+
+Rate limit defaults:
+- `API_RATE_LIMIT_WINDOW_MS=60000`
+- `API_RATE_LIMIT_MAX=30`
