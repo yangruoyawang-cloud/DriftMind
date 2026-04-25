@@ -1,12 +1,9 @@
 import { motion } from "motion/react";
-
-const QUOTES = [
-  { text: "世间一切有为法，如梦幻泡影，如露亦如电，应作如是观。", author: "《金刚经》" },
-  { text: "我认为，每一个不曾起舞的日子，都是对生命的辜负。", author: "尼采" },
-  { text: "你要自己发光，而不是借谁的光。", author: "鲁米" }
-];
+import { getClassicQuoteCards } from "../lib/classicQuotes";
 
 export default function Quotes() {
+  const quotes = getClassicQuoteCards();
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -21,7 +18,7 @@ export default function Quotes() {
       </div>
 
       <div className="space-y-12">
-        {QUOTES.map((quote, i) => (
+        {quotes.map((quote, i) => (
           <motion.div 
             key={i}
             initial={{ opacity: 0, y: 10 }}

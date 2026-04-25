@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc, query, collection, where, orderBy, limit, getDocs,
 import { OperationType, UserProfile } from "../types";
 import { summarizeUserProfile, getBookIntroduction } from "../services/geminiService";
 import { RefreshCw, BookOpen, Loader2, X } from "lucide-react";
+import { sanitizeClassicResonance, selectClassicResonance } from "../lib/classicQuotes";
 
 export default function Profile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -23,7 +24,7 @@ export default function Profile() {
         const mappedProfile: UserProfile = {
           ...data,
           psychology: data.psychology || "",
-          resonance: data.resonance || [],
+          resonance: sanitizeClassicResonance(data.resonance),
           philosophy: data.philosophy || [],
           recentShift: data.recentShift || (data as any).recent_shift || "",
           updatedAt: (data as any).updatedAt?.toDate?.() ? (data as any).updatedAt.toDate().toISOString() : String(data.updatedAt)
@@ -79,7 +80,13 @@ export default function Profile() {
           style: newProfileData.style || "",
           recentShift: (newProfileData as any).recent_shift || (newProfileData as any).recentShift || "",
           psychology: (newProfileData as any).psychology || "",
-          resonance: newProfileData.resonance || [],
+          resonance: selectClassicResonance({
+            entries: entryTexts,
+            themes: newProfileData.themes || [],
+            tone: newProfileData.tone || "",
+            style: newProfileData.style || "",
+            count: 3,
+          }),
           philosophy: newProfileData.philosophy || [],
           updatedAt: new Date().toISOString()
         };
