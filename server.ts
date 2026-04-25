@@ -9,8 +9,8 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  // 在 AI Studio 预览中必须使用 3000。如果为了 Cloud Run，通常平台会注入 PORT=3000。
-  const PORT = 3000;
+  // Use the platform-provided PORT in production deployments.
+  const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json());
 
