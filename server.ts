@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
 import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -89,6 +88,7 @@ async function startServer() {
 
   // Vite 处理
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
