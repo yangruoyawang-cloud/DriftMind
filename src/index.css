@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&family=Inter:wght@300;400&family=Noto+Serif+SC:wght@300;400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans SC", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Noto Serif SC", "Georgia", serif;
+  
+  --color-paper: var(--bg-color, #f4f1ea);
+  --color-ink: var(--text-color, #2c2c2c);
+  --color-mist: var(--mist-color, #e2e2e2);
+  --color-accent: #8c7e6a;
+}
+
+:root {
+  --bg-color: #f4f1ea;
+  --text-color: #2c2c2c;
+  --mist-color: #e2e2e2;
+  --ink-wash: #1e293b;
+  --gold-accent: #D4AF37;
+  --border-color: rgba(44, 44, 44, 0.1);
+  --paper-pattern: url('https://www.transparenttextures.com/patterns/natural-paper.png');
+  --base-font-size: 16px;
+}
+
+[data-theme='light'] {
+  --bg-color: #faf7e6; /* 更接近奶黄色的细腻基调 */
+  --text-color: #2c2c2c;
+  --mist-color: #efebe0;
+  --ink-wash: #4b5563;
+  --gold-accent: #b4975a;
+  --border-color: rgba(44, 44, 44, 0.1);
+  --paper-pattern: none;
+}
+
+[data-theme='dark'] {
+  --bg-color: #111111;
+  --text-color: #e5e5e5;
+  --mist-color: #222222;
+  --ink-wash: #0f172a;
+  --gold-accent: #8b7355;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --paper-pattern: none;
+}
+
+[data-theme='paper'] {
+  --bg-color: #f4f1ea;
+  --text-color: #2c2c2c;
+  --mist-color: #e2e2e2;
+  --ink-wash: #1e293b;
+  --gold-accent: #D4AF37;
+  --border-color: rgba(44, 44, 44, 0.1);
+  --paper-pattern: url('https://www.transparenttextures.com/patterns/natural-paper.png');
+}
+
+html {
+  font-size: var(--base-font-size);
+}
+
+body {
+  @apply font-sans text-ink bg-paper antialiased;
+  line-height: 1.8;
+  background-image: var(--paper-pattern);
+  transition: background-color 0.5s ease, color 0.5s ease, font-size 0.3s ease;
+}
+
+*:focus {
+  outline: none;
+}
+
+/* Custom transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 1000ms, transform 1000ms;
+}
+
+/* Tracking utility */
+.tracking-poetic {
+  letter-spacing: 0.25em;
+}
+
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(44, 44, 44, 0.05);
+  border-radius: 10px;
+}
+

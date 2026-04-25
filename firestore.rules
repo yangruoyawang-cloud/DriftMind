@@ -1,0 +1,162 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. Entry Validation
+    function isValidEntry(data) {
+      return data.keys().hasAll(['id', 'content', 'response', 'userId', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && (data.get('title', null) == null || (data.title is string && data.title.size() <= 200))
+        && data.content is string && data.content.size() <= 10000
+        && data.response is string && data.response.size() <= 10000
+        && data.userId == request.auth.uid
+        && (data.get('isFavorite', false) is bool)
+        && (data.get('isSafetyTriggered', false) is bool)
+        && (data.get('isDeleted', false) is bool)
+        && (data.get('deletedAt', null) == null || data.deletedAt is string);
+    }
+
+    // 2. Profile Validation
+    function isValidProfile(data) {
+      return data.keys().hasAll(['userId', 'themes', 'tone', 'style', 'recentShift', 'psychology', 'resonance', 'philosophy', 'updatedAt'])
+        && data.keys().size() == 9
+        && data.userId == request.auth.uid
+        && data.themes is list
+        && data.themes.size() <= 20
+        && (data.themes.size() == 0 || data.themes[0] is string)
+        && data.tone is string && data.tone.size() <= 1000
+        && data.style is string && data.style.size() <= 1000
+        && data.recentShift is string && data.recentShift.size() <= 1000
+        && data.psychology is string && data.psychology.size() <= 5000
+        && data.resonance is list
+        && data.resonance.size() <= 20
+        && (data.resonance.size() == 0 || data.resonance[0] is string)
+        && data.philosophy is list
+        && data.philosophy.size() <= 20
+        && (data.philosophy.size() == 0 || data.philosophy[0] is map)
+        && data.updatedAt == request.time;
+    }
+
+    // 3. User Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['updatedAt'])
+        && (data.get('isPrivate', true) is bool)
+        && (data.get('cloudSync', true) is bool)
+        && (data.get('theme', '跟随系统') is string)
+        && (data.get('fontSize', '标准') is string)
+        && (data.get('displayName', '') is string)
+        && (data.get('photoURL', '') is string)
+        && (data.get('notifications', null) == null || data.notifications is map);
+    }
+
+    function isValidFeedback(data) {
+      return data.keys().hasAll(['content', 'userId', 'createdAt'])
+        && data.content is string && data.content.size() <= 2000
+        && data.userId == request.auth.uid
+        && (data.get('userEmail', '') is string)
+        && data.createdAt == request.time;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (request.auth.token.email == 'yangruoya.wang@gmail.com' && request.auth.token.email_verified == true);
+    }
+
+    // --- Collections ---
+
+    match /config/{configId} {
+      allow read: if true; // Publicly readable settings
+      allow write: if isAdmin() && isValidId(configId);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      // Users are not listed
+
+      allow create: if isOwner(userId)
+        && isValidUser(incoming())
+        && incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId)
+        && isValidUser(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isPrivate', 'cloudSync', 'theme', 'fontSize', 'notifications', 'displayName', 'photoURL', 'updatedAt']);
+
+      allow delete: if isOwner(userId);
+    }
+
+    match /entries/{entryId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+        && isValidId(entryId) 
+        && entryId == incoming().id
+        && isValidEntry(incoming())
+        && incoming().createdAt == request.time;
+
+      allow update: if isOwner(existing().userId)
+        && isValidEntry(incoming())
+        && incoming().userId == existing().userId
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['isFavorite']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['isDeleted', 'deletedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'response', 'isSafetyTriggered', 'isFavorite', 'isDeleted', 'deletedAt'])
+        );
+
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /profiles/{userId} {
+      allow get: if isOwner(userId);
+      // Profiles are not listed, usually accessed by ID (userId)
+      
+      allow create: if isOwner(userId)
+        && isValidProfile(incoming())
+        && incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId)
+        && isValidProfile(incoming())
+        && incoming().userId == existing().userId
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['themes', 'tone', 'style', 'recentShift', 'psychology', 'resonance', 'philosophy', 'updatedAt']);
+
+      allow delete: if isOwner(userId);
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if isSignedIn()
+        && isValidId(feedbackId)
+        && isValidFeedback(incoming());
+      
+      // Usually, users shouldn't read all feedback, only admins or specifically structured
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

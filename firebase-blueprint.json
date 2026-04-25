@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Entry": {
+      "title": "Journal Entry",
+      "description": "A poetic reflection entry containing user text and AI response.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "description": "Optional title for the entry." },
+        "content": { "type": "string", "description": "The original user text." },
+        "response": { "type": "string", "description": "The AI's poetic reflection." },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "isDeleted": { "type": "boolean" },
+        "isFavorite": { "type": "boolean", "description": "Whether the entry is favorited." },
+        "isSafetyTriggered": { "type": "boolean", "description": "Whether safety filters were triggered." }
+      },
+      "required": ["id", "content", "userId", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "User AI Profile",
+      "description": "A summarized perception of the user's recent themes and tone.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "themes": { "type": "array", "items": { "type": "string" } },
+        "tone": { "type": "string" },
+        "style": { "type": "string" },
+        "recentShift": { "type": "string" },
+        "psychology": { "type": "string", "description": "Deep psychological analysis." },
+        "resonance": { "type": "array", "items": { "type": "string" }, "description": "Classical quotes resonance." },
+        "philosophy": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "left": { "type": "string" },
+              "right": { "type": "string" },
+              "value": { "type": "number" }
+            }
+          },
+          "description": "Philosophy dimension distribution (0-100)."
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "updatedAt"]
+    },
+    "User": {
+      "title": "User Settings",
+      "description": "Privacy, notifications, sync and theme settings.",
+      "type": "object",
+      "properties": {
+        "isPrivate": { "type": "boolean" },
+        "cloudSync": { "type": "boolean" },
+        "theme": { "type": "string", "enum": ["system", "light", "dark", "paper"] },
+        "fontSize": { "type": "string", "enum": ["fine", "standard", "bold"] },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "notifications": {
+          "type": "object",
+          "properties": {
+            "dailyReminder": { "type": "boolean" },
+            "systemMessages": { "type": "boolean" }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["updatedAt"]
+    },
+    "Feedback": {
+      "title": "User Feedback",
+      "description": "User feedback and suggestions.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "userId", "createdAt"]
+    },
+    "AppConfig": {
+      "title": "App Configuration",
+      "description": "Global application settings.",
+      "type": "object",
+      "properties": {
+        "logoURL": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["updatedAt"]
+    }
+  },
+  "firestore": {
+    "entries": {
+      "schema": "Entry",
+      "description": "Store all user journal entries and AI responses."
+    },
+    "profiles": {
+      "schema": "UserProfile",
+      "description": "Store AI-generated profiles for each user."
+    },
+    "users": {
+      "schema": "User",
+      "description": "User privacy settings and preferences."
+    },
+    "feedback": {
+      "schema": "Feedback",
+      "description": "Store user feedback submissions."
+    },
+    "config": {
+      "schema": "AppConfig",
+      "description": "Global application settings."
+    }
+  }
+}
