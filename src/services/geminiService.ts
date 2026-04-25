@@ -1,3 +1,4 @@
+import { Type } from "@google/genai";
 import { UserProfile } from "../types";
 
 const CORE_SYSTEM_INSTRUCTION = `你是一个融合文学、心理学、哲学与佛学气质的文本回应者。
@@ -7,12 +8,11 @@ const CORE_SYSTEM_INSTRUCTION = `你是一个融合文学、心理学、哲学�
 核心要求：
 - 不提供建议或解决方案
 - 不进行心理诊断
-- 不使用标签化语言（如“焦虑”“抑郁”）
+- 不使用标签化语言
 - 使用模糊、感知性表达
 - 不超过3句话
-- 不引用具体人物
 - 风格克制、安静、有留白
-- 如果内容涉及极端负面情感（如自杀、自残），请切换到安全回应模式：生成温和支持性语句，建议联系现实资源，不哲学化。
+- 如果内容涉及极端负面情感，请切换到安全回应模式：生成温和支持性语句，建议联系现实资源。
 
 回复风格：像是在山间或水边的一次无声对视。`;
 
@@ -42,7 +42,7 @@ export async function generatePoeticResponse(content: string, profile?: UserProf
     const text = data.text || "……";
     return {
       text,
-      isSafetyTriggered: text.includes("[SAFETY_TRIGGERED]") || !!data.isSafetyTriggered
+      isSafetyTriggered: text === "[SAFETY_TRIGGERED]"
     };
   } catch (error) {
     console.error("Gemini Proxy Error:", error);
@@ -52,41 +52,31 @@ export async function generatePoeticResponse(content: string, profile?: UserProf
 }
 
 export async function summarizeUserProfile(entries: string[]) {
-  const instruction = `总结这些文字并进行多维度分析。在分析过程中，请始终使用第二人称“你”来称呼对方（例如：“你的文字中流露出...”，“你似乎正在...”），使分析读起来像是一场跨越时空的深度对话：
-1. 主题 (themes): 你关注的核心议题。
-2. 情绪基调 (tone): 你整体的情绪状态。
-3. 表达风格 (style): 你语言的使用方式。
-4. 变化趋势 (recent_shift): 你心理或状态的微小转向。
-5. 心理分析 (psychology): 结合专业心理学知识（如依恋理论、认知失调、积极心理学等），针对“你”给出一段由浅入深的分析。语气需专业、温和、有洞察力，务必避免任何断言或定论（如“你是...”、“这说明你...”）。请使用更具探索性和可能性的话术，如“你或许...”、“文字中似乎透露出...”、“这可能映射了...”。严禁给出任何医疗或不可靠的专业建议。
-6. 经典共振 (resonance): 假设你拥有庞大的经典书籍库（文学、哲学、佛学）。请选出三句最能与“你”当前的内容和思想产生“共振”的经典语录（请标注作者/出处）。
-7. 思想刻度 (philosophy): 深度剖析用户文字中流露的价值观，给出在以下四组极点间的倾向分值（0-100）。
-   - 0 代表极度偏向左侧极点，100 代表极度偏向右侧极点。
-   - **绝对严禁默认设为 50**。即使文字较少，你也必须根据词性、语气、关注重点（如：是否执着于因果、是否强调感官化、是否逻辑严丝合缝）给出具有显著差异的分值（例如 35 vs 65）。
-   - 你必须严格使用以下中文标签：
-     - { "left": "理性", "right": "感性", "value": ... }
-     - { "left": "宿命", "right": "自由", "value": ... }
-     - { "left": "现实", "right": "理想", "value": ... }
-     - { "left": "独处", "right": "联结", "value": ... }
-
-要求：以“你”为对象，语气谦逊且具有启发性，分析务必犀利且具有洞察力。以 JSON 格式输出。`;
+  const instruction = `总结这些文字并进行分析，使用第二人称“你”：
+1. themes: 主题。
+2. tone: 情绪基准。
+3. style: 表达风格。
+4. psychology: 心理深度分析（语气谦逊）。
+5. philosophy: 价值观分值倾向。
+以 JSON 格式输出。`;
 
   const responseSchema = {
-    type: "object",
+    type: Type.OBJECT,
     properties: {
-      themes: { type: "array", items: { type: "string" } },
-      tone: { type: "string" },
-      style: { type: "string" },
-      recent_shift: { type: "string" },
-      psychology: { type: "string" },
-      resonance: { type: "array", items: { type: "string" } },
+      themes: { type: Type.ARRAY, items: { type: Type.STRING } },
+      tone: { type: Type.STRING },
+      style: { type: Type.STRING },
+      recent_shift: { type: Type.STRING },
+      psychology: { type: Type.STRING },
+      resonance: { type: Type.ARRAY, items: { type: Type.STRING } },
       philosophy: {
-        type: "array",
+        type: Type.ARRAY,
         items: {
-          type: "object",
+          type: Type.OBJECT,
           properties: {
-            left: { type: "string" },
-            right: { type: "string" },
-            value: { type: "number" }
+            left: { type: Type.STRING },
+            right: { type: Type.STRING },
+            value: { type: Type.NUMBER }
           },
           required: ["left", "right", "value"]
         }
@@ -115,21 +105,14 @@ export async function summarizeUserProfile(entries: string[]) {
 }
 
 export async function getBookIntroduction(bookTitle: string) {
-  const instruction = `你是一个专业的文学研究助手。
-任务：为用户提供关于书籍《${bookTitle}》的客观背景介绍。
-要求：
-1. 内容涵盖：该作品的历史背景、主要脉络及核心思想。
-2. 风格：平和、客观、简炼。严禁使用感性修辞或任何“油腻”的文艺腔调。
-3. 形式：直接输出流畅的整段文字，严禁使用粗体（如 **内容**）、星号、列表、或带有特定标题的格式。
-4. 篇幅：200-300 字左右。
-5. 始终输出纯文本，不要包含任何 Markdown 语法符号。`;
+  const instruction = `你是一个专业的文学研究助手。直接输出整段 200 字左右的《${bookTitle}》背景与思想介绍，不使用 Markdown 语法。`;
 
   try {
     const res = await fetch("/api/book-info", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
-        prompt: `请客观、专业地介绍书籍《${bookTitle}》的背景与核心思想。`,
+        prompt: `介绍书籍《${bookTitle}》`,
         systemInstruction: instruction
       })
     });
@@ -139,6 +122,6 @@ export async function getBookIntroduction(bookTitle: string) {
     return data.text || "暂无相关资料。";
   } catch (error) {
     console.error("Book Intro Proxy Error:", error);
-    return "暂时未能抓取到该书的相关科普资料。";
+    return "暂时未能抓取到相关资料。";
   }
 }

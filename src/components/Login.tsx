@@ -6,12 +6,22 @@ import { signInWithGoogle } from "../lib/firebase";
 export default function Login() {
   const [loading, setLoading] = useState(false);
 
+  const [errorStatus, setErrorStatus] = useState<string | null>(null);
+
   const handleLogin = async () => {
     setLoading(true);
+    setErrorStatus(null);
     try {
       await signInWithGoogle();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
+      if (error.code === 'auth/popup-blocked') {
+        setErrorStatus("弹窗被浏览器拦截，请允许弹窗或更换浏览器。");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setErrorStatus("当前域名未被授权。请在 Firebase 控制台添加此域名。");
+      } else {
+        setErrorStatus("登录失败，请重试。" + (error.message || ""));
+      }
     } finally {
       setLoading(false);
     }
@@ -64,6 +74,12 @@ export default function Login() {
             </>
           )}
         </button>
+
+        {errorStatus && (
+          <p className="text-[10px] text-center text-red-400 font-light tracking-widest leading-relaxed">
+            {errorStatus}
+          </p>
+        )}
 
         <p className="text-[10px] text-center text-stone-300 font-light tracking-widest leading-relaxed">
           登录即代表你同意《浮白隐私政策》<br/>
